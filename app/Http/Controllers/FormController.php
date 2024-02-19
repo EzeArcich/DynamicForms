@@ -224,7 +224,6 @@ class FormController extends Controller
 
     public function formDeletes()
     {
-
         return view('forms.toRestore');
     }
 
@@ -248,6 +247,7 @@ class FormController extends Controller
 
     public function restoreFormDeletes(string $id)
     {
+
         $form = Form::withTrashed()->find($id);
         
         if ($form) {

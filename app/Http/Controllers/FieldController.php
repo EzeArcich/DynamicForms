@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\Field;
 
 use Illuminate\Http\Request;
 
@@ -59,6 +60,23 @@ class FieldController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+
+            $form = Field::find($id);
+            $form->delete();
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Field has been deleted'
+            ]);
+            
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Something goes wrong',
+                'errors' => [$e->getMessage()],
+            ]);
+        }
     }
 }

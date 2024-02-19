@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\FieldController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,7 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::resource('form', FormController::class);
+Route::resource('field', FieldController::class);
 Route::get('getFormsData', [FormController::class, 'getFormsData']);
 Route::put('updateValues/{id?}', [FormController::class, 'updateValues']);
 Route::get('getFormDeletes', [FormController::class, 'getFormDeletes']);

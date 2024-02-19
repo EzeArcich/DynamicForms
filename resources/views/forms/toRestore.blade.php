@@ -56,7 +56,7 @@
                 data: 'id',
                     render: function(data, type, full, meta) {
 
-                          var  buttonsHtml = '<a class="btn btn-sm btn-danger mx-1" data-id="' + data + '"><i class="fas fa-fw fa-trash"></i></a>';
+                          var  buttonsHtml = '<a class="btn btn-sm btn-success mx-1" data-id="' + data + '" id="restore_button"><i class="fas fa-fw fa-folder-open"></i></a>';
                         
 
                         return buttonsHtml;
@@ -68,39 +68,75 @@
             responsive: true,
         });
 
+        function restoreDeletedForm(id) {
             $.ajax({
-                type: 'PUT',
-                url: '/updateValues',
-                data: {values: valuesToUpdate,
+                type: "PUT",
+                url: "/restoreFormDeletes/" + id,
+                data: {id:id,
                     _token: '{{csrf_token()}}'},
                 success: function (response) {
-                    if (response.success) {
+                    if(response.success == true) {
                         Swal.fire({
                             icon: 'success',
                             title: 'Success!',
                             text: response.message,
                         });
-                        $('#add_form_modal').modal('hide');
-                    } else {
+                    } else{
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: response.error,
+                            text: response.message,
                         });
                     }
                     setTimeout(function() {
                         location.reload();
                     }, 3000)
                 },
-                error: function (error, xhr) {
+                error: function (error) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
-                        text: error.responseJSON.message,
+                        text: 'Something went wrong with the request.',
                     });
                 }
             });
-     
+        }
+
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: "btn btn-success mx-1",
+                cancelButton: "btn btn-danger mx-1"
+            },
+            buttonsStyling: false
+        });
+
+        
+
+        $(document).on('click', '#restore_button', function() {
+            var id = $(this).data('id');
+
+            swalWithBootstrapButtons.fire({
+                title: "Are you sure?",
+                text: "You are about to restore this form.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes",
+                cancelButtonText: "No",
+                reverseButtons: true
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    restoreDeletedForm(id);
+                } else if (
+                    /* Read more about handling dismissals below */
+                    result.dismiss === Swal.DismissReason.cancel
+                ) {
+
+                }
+            });
+            
+
+            
+        });     
     });
 </script>
 

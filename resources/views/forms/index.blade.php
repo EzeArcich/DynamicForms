@@ -202,6 +202,14 @@
     $(document).ready(function () {
 
         $('#options').tagify();
+
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: "btn btn-success mx-1",
+                cancelButton: "btn btn-danger mx-1"
+            },
+            buttonsStyling: false
+        });
         
         function getTableData() {
             $('#forms_table').DataTable({
@@ -220,7 +228,7 @@
                             
                             if (userRoles.includes('admin')) {
                                 buttonsHtml += '<a class="btn btn-sm btn-info btn-edit  mx-1" data-id="' + data + '"><i class="fas fa-fw fa-edit"></i></a>' +
-                                    '<a class="btn btn-sm btn-danger mx-1" data-id="' + data + '"><i class="fas fa-fw fa-trash"></i></a>';
+                                    '<a class="btn btn-sm btn-danger btn-delete mx-1" data-id="' + data + '"><i class="fas fa-fw fa-trash"></i></a>';
                             }
 
                             return buttonsHtml;
@@ -235,26 +243,55 @@
 
         getTableData();
 
-        $(document).on('click', '.btn-danger', function() {
-            var id = $(this).data('id');
-            
+        function deleteForm(id) {
             $.ajax({
                 type: "DELETE",
                 url: "/form/" + id,
                 data: {id:id,
                     _token: '{{csrf_token()}}'},
                 success: function (response) {
-                    console.log(response);
+                    if(response.success == true) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: response.message,
+                        });
+                    } else{
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message,
+                        });
+                    }
+                    setTimeout(function() {
+                        location.reload();
+                    }, 3000)
+                }
+            });
+        }
+
+        $(document).on('click', '.btn-delete', function() {
+            var id = $(this).data('id');
+
+            swalWithBootstrapButtons.fire({
+                title: "Are you sure?",
+                text: "You are about to delete this form.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes",
+                cancelButtonText: "No",
+                reverseButtons: true
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteForm(id);
+                } else if (
+                    /* Read more about handling dismissals below */
+                    result.dismiss === Swal.DismissReason.cancel
+                ) {
+
                 }
             });
         });
-
-
-
-
-
-
-
 
         $(document).on('click', '.btn-edit', function () {
             var formId = $(this).data('id');
@@ -277,6 +314,56 @@
                 }
             });
         });
+
+        function deleteField(id) {
+            $.ajax({
+                type: "DELETE",
+                url: "/field/" + id,
+                data: {id:id,
+                    _token: '{{csrf_token()}}'},
+                success: function (response) {
+                    if(response.success == true) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Success!',
+                            text: response.message,
+                        });
+                    } else{
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.message,
+                        });
+                    }
+                }
+            });
+        }
+
+        $(document).on('click', '.btn-remove-row', function () { 
+            $(this).closest('.row').remove();
+            var fieldId = $(this).data('btn-id');
+
+            swalWithBootstrapButtons.fire({
+                title: "Are you sure?",
+                text: "You are about to delete this field.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Yes",
+                cancelButtonText: "No",
+                reverseButtons: true
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    deleteField(fieldId);
+                } else if (
+                    /* Read more about handling dismissals below */
+                    result.dismiss === Swal.DismissReason.cancel
+                ) {
+
+                }
+            });
+        
+        });
+
 
         function populateEditModal(formData, formId) {
             $('#formName_edit').val(formData.form.name);
@@ -318,17 +405,22 @@
                                 </select>
                             </div>
                         </div>
+                    </div>
+                    <div class="col-md-2 col-12">
+                        <div class="form-group">
+                            <button type="button" class="btn btn-danger btn-sm btn-remove-row" data-btn-id="${fieldIdEdit}">Remove</button>
+                        </div>
                     </div>`;
 
                 if (fieldTypeEdit === 'option') {
                     newRowEditInput += `
-                        <div class="col-12">
-                            <div class="form-group">
-                                <label for="optionsEdit">Insert field options</label> - Type and press Enter
-                                <input id="optionsEdit_${fieldIdEdit}" name="optionsEdit" class="form-control"
-                                style="display: inline-block !important; height: auto !important;" value="${fieldOptionsEdit.join(',')}">
-                            </div>
-                        </div>`;
+                    <div class="col-12">
+                        <div class="form-group">
+                            <label for="optionsEdit">Insert field options</label> - Type and press Enter
+                            <input id="optionsEdit_${fieldIdEdit}" name="optionsEdit" class="form-control"
+                            style="display: inline-block !important; height: auto !important;" value="${fieldOptionsEdit.join(',')}">
+                        </div>
+                    </div>`;
                 }
 
                 var newRow = $('<div class="row">' + newRowEditInput + '</div>');
