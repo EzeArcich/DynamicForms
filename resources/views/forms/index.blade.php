@@ -1,7 +1,6 @@
 @extends('adminlte::page')
 
 @section('title', 'Dashboard')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
@@ -19,10 +18,13 @@
 
 @section('content')
 
+    
     <div class="row my-5" style="padding-top:50px!important;">
+    @role('admin')
         <div class="col-12">
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#add_form_modal">Add Modal</button>
         </div>
+        @endrole
     </div>
     <div class="row">
         <div class="col col-12">
@@ -82,7 +84,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-12">
-                                        <button type="button" class="btn btn-success" id="add_row">Add Field</button>
+                                        <button type="button" class="btn btn-success add_row" data-action="store">Add Field</button>
                                     </div>
                                 </div>
                             </div>
@@ -92,7 +94,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="save_form">Save Form</button>
+                <button type="button" class="btn btn-primary save_form" data-button-form="save">Save Form</button>
             </div>
             </div>
         </div>
@@ -143,6 +145,7 @@
                                                 <span class="input-group-text">Form Name</span>
                                             </div>
                                             <input type="text" id="formName_edit" class="form-control">
+                                            <input type="hidden" id="formId">
                                         </div>
                                     </div>
                                 </div>
@@ -161,7 +164,7 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-12">
-                                        <button type="button" class="btn btn-success" id="add_row">Add Field</button>
+                                        <button type="button" class="btn btn-success add_row" data-action="edit">Add Field</button>
                                     </div>
                                 </div>
                             </div>
@@ -171,7 +174,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" id="update_form">Save Form</button>
+                <button type="button" class="btn btn-primary save_form" data-button-form="edit">Save Form</button>
             </div>
             </div>
         </div>
@@ -194,35 +197,64 @@
 <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify@4.3.0/dist/jQuery.tagify.min.js"></script>
 <script>
     var fieldOptions = [];
+    var userRoles = @json($userRoles);
 
     $(document).ready(function () {
 
         $('#options').tagify();
         
-        
-        $('#forms_table').DataTable({
-            ajax: 'getFormsData',
-            columns: [
-                {data: 'id'},
-                {data: 'name'},
-                {data: 'fields_count'},
-                {data: 'fields_names'},
-                {data: 'created_at_formatted'},
-                {data: 'updated_at_formatted'},
-                {
+        function getTableData() {
+            $('#forms_table').DataTable({
+                ajax: 'getFormsData',
+                columns: [
+                    {data: 'id'},
+                    {data: 'name'},
+                    {data: 'fields_count'},
+                    {data: 'fields_names'},
+                    {data: 'created_at_formatted'},
+                    {data: 'updated_at_formatted'},
+                    {
                     data: 'id',
-                    render: function(data, type, full, meta) {
-                        return '<a class="btn btn-sm btn-success mx-1" href="/form/'+ data +'"><i class="fas fa-fw fa-eye"></i></a>' +
-                        '<a class="btn btn-sm btn-info btn-edit  mx-1" data-id="' + data + '"><i class="fas fa-fw fa-edit"></i></a>' +
-                                '<a class="btn btn-sm btn-danger  mx-1" onclick="deleteForm(' + data + ')"><i class="fas fa-fw fa-trash"></i></a>'
-                                
+                        render: function(data, type, full, meta) {
+                            var buttonsHtml = '<a class="btn btn-sm btn-success mx-1" href="/form/'+ data +'"><i class="fas fa-fw fa-eye"></i></a>';
+                            
+                            if (userRoles.includes('admin')) {
+                                buttonsHtml += '<a class="btn btn-sm btn-info btn-edit  mx-1" data-id="' + data + '"><i class="fas fa-fw fa-edit"></i></a>' +
+                                    '<a class="btn btn-sm btn-danger mx-1" data-id="' + data + '"><i class="fas fa-fw fa-trash"></i></a>';
+                            }
+
+                            return buttonsHtml;
                     },
                     orderable: false,
                     searchable: false
                 }
-            ],
-            responsive: true,
+                ],
+                responsive: true,
+            });
+        }
+
+        getTableData();
+
+        $(document).on('click', '.btn-danger', function() {
+            var id = $(this).data('id');
+            
+            $.ajax({
+                type: "DELETE",
+                url: "/form/" + id,
+                data: {id:id,
+                    _token: '{{csrf_token()}}'},
+                success: function (response) {
+                    console.log(response);
+                }
+            });
         });
+
+
+
+
+
+
+
 
         $(document).on('click', '.btn-edit', function () {
             var formId = $(this).data('id');
@@ -233,7 +265,7 @@
                 dataType: "json",
                 success: function (data) {
                     if (data.success) {
-                        populateEditModal(data.formData);
+                        populateEditModal(data.formData, formId);
 
                         $('#editFormModal').modal('show');
                     } else {
@@ -246,17 +278,20 @@
             });
         });
 
-        function populateEditModal(formData) {
+        function populateEditModal(formData, formId) {
             $('#formName_edit').val(formData.form.name);
+            $('#formId').val(formId);
 
             var fields = formData.fields;
             var dynamicFieldsContainerEdit = $('#dynamics_fields_edit');
+            
+            dynamicFieldsContainerEdit.empty();
 
             $.each(fields, function (index, field) {
                 var fieldIdEdit = field.id;
                 var fieldNameEdit = field.name;
                 var fieldTypeEdit = field.type;
-                var fieldOptionsEdit = JSON.parse(field.options);
+                var fieldOptionsEdit = field.options ? JSON.parse(field.options) : [];
 
                 var newRowEditInput = `
                     <div class="col-md-5 col-12">
@@ -273,7 +308,7 @@
                         <div class="form-group">
                             <div class="input-group mb-3">
                                 <div class="input-group-prepend">
-                                    <span class="input-group-text" for="selectType">Field Type/Data</span>
+                                    <span class="input-group-text" for="selectType${fieldIdEdit}">Field Type/Data</span>
                                 </div>
                                 <select class="custom-select dynamic-select" data-field-id="${fieldIdEdit}" id="select_type_edit_${fieldIdEdit}">
                                     <option value="number" ${fieldTypeEdit === 'number' ? 'selected' : ''}>Number</option>
@@ -306,36 +341,52 @@
             });
         }
 
+
         $('#optionsModal').on('shown.bs.modal', function () {
             $(this).css('z-index', 1050);
         });
 
+
+        // Lógica para agregar rows dinámicas
+
         var dynamicFieldsContainer = $('#dynamics_fields');
 
-        $('#add_row').click(function (e) { 
-            addDynamicField();            
+        $('.add_row').click(function (e) { 
+            var nameIdField = '';
+            var nameidSelect = '';
+            var actionValue = $(this).data('action');
+            if(actionValue == 'edit') {
+                dynamicFieldsContainer =  $('#dynamics_fields_edit');
+                nameIdField = 'field_name_edit_';
+                nameidSelect = 'select_type_edit_'
+            } else {
+                dynamicFieldsContainer = $('#dynamics_fields');
+                nameIdField = 'field_name_';
+                nameidSelect = 'select_type_'
+            }
+            addDynamicField(nameIdField, nameidSelect);            
         });
 
-        function addDynamicField() {
+        function addDynamicField(nameIdField, nameidSelect) {
             var fieldId = new Date().getTime();
             var newRow = 
-                `<div class="col-md-5 col-12">
+                `<div class="col-md-5 col-sm-12 col-12">
                     <div class="form-group">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text" >Field Name</span>
                             </div>
-                            <input type="text" class="form-control" id="field_name_${fieldId}">
+                            <input type="text" class="form-control" id="${nameIdField}${fieldId}">
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 col-12">
+                <div class="col-md-5 col-sm-12 col-12">
                     <div class="form-group">
                         <div class="input-group mb-3">
                             <div class="input-group-prepend">
                                 <span class="input-group-text" for="selectType" >Field Type/Data</span>
                             </div>
-                            <select class="custom-select dynamic-select" data-field-id="${fieldId}" id="select_type_${fieldId}">
+                            <select class="custom-select dynamic-select" data-field-id="${fieldId}" id="${nameidSelect}${fieldId}">
                                 <option selected>Choose...</option>
                                 <option value="number">Number</option>
                                 <option value="date">Date</option>
@@ -345,8 +396,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-1 col-12">
-                    <button type="button" class="btn btn-danger btn-remove-row" >Remove</button>
+                <div class="col-md-1 col-sm-12 col-12 mb-3 text-center">
+                    <button type="button" class="btn btn-danger btn-sm btn-remove-row" >Remove</button>
                 </div>`;
 
                 dynamicFieldsContainer.append('<div class="row">' + newRow + '</div>');
@@ -355,12 +406,23 @@
                 });
         };
 
+        // Fin de lógica para agregar rows dinámicas
+
+
+        // Fix superposición de modal - #optionsModal aparece detrás
+        $(document).on('show.bs.modal', '.modal', function() {
+            const zIndex = 1040 + 10 * $('.modal:visible').length;
+            $(this).css('z-index', zIndex);
+            setTimeout(() => $('.modal-backdrop').not('.modal-stack').css('z-index', zIndex - 1).addClass('modal-stack'));
+        });
+        // Fin de fix superposición de modal - #optionsModal aparece detrás
+
+
         $(document).on('change', '.dynamic-select', function () { 
             var selectedValue = $(this).val();
             var fieldId = $(this).data('field-id');
 
             if(selectedValue == "option") {
-                alert(fieldId);
                 $('#optionsModal').attr('data-currentFieldId', fieldId).modal('show');
             }
         });
@@ -381,35 +443,83 @@
             $('#optionsModal').modal('hide');
         });
 
-
-
+        // Ingreso de nuevos formularios
         
-        $('#save_form').click(function (e) { 
+        $('.save_form').click(function (e) { 
             e.preventDefault();
 
-
+            var actionValue = $(this).data('button-form');
+            var id = $('#formId').val();
+            var formName = '';
+            var method = '';
+            var url = '';
             var formData = [];
 
-            var formName = $('#formName').val();
-            formData.push({formName: formName});
-    
-            dynamicFieldsContainer.find('.row').each(function () {
-                var fieldId = $(this).find('[id^="field_name_"]').attr('id').split('_').pop();
-                var fieldName = $('#field_name_' + fieldId).val();
-                var fieldType = $('#select_type_' + fieldId).val();
-                var options = fieldOptions[fieldId];
-    
-                formData.push({
-                    name: fieldName,
-                    type: fieldType,
-                    options: options
-                });
-            });
+            if(actionValue == 'edit') {
+                method = 'PUT';
+                url = "/form/" + id;
+                formName = $('#formName_edit').val();
+                dynamicFieldsContainer =  $('#dynamics_fields_edit');
 
+
+                dynamicFieldsContainer.find('.row').each(function () {
+                    var fieldId = $(this).find('[id^="field_name_edit_"]').attr('id').split('_').pop();
+                    var fieldName = $('#field_name_edit_' + fieldId).val();
+                    var fieldType = $('#select_type_edit_' + fieldId).val();
+                    var options = $('#optionsEdit_' + fieldId).val();
+                    var options2 = fieldOptions[fieldId];
+
+                    var parsedOptions = options ? JSON.parse(options) : [];
+                    var parsedOptions2 = options2 ? JSON.parse(options2) : [];
+
+                    // Combina los arrays
+                    var combinedOptions = parsedOptions.concat(parsedOptions2);
+
+                    // Filtra duplicados
+                    combinedOptions = combinedOptions.filter(function(option, index, self) {
+                        return index === self.findIndex(o => o.value === option.value);
+                    });
+
+                    // Convierte el array combinedOptions a una cadena JSON
+                    var optionsString = JSON.stringify(combinedOptions);
+                    
+
+        
+                    formData.push({
+                        id: fieldId,
+                        name: fieldName,
+                        type: fieldType,
+                        options: optionsString,
+                    });
+                });
+
+            } else {
+                method = 'POST';
+                url = "{{url('form')}}";
+                formName = $('#formName').val();
+                dynamicFieldsContainer = $('#dynamics_fields');
+
+                dynamicFieldsContainer.find('.row').each(function () {
+                    var fieldId = $(this).find('[id^="field_name_"]').attr('id').split('_').pop();
+                    var fieldName = $('#field_name_' + fieldId).val();
+                    var fieldType = $('#select_type_' + fieldId).val();
+                    var options = fieldOptions[fieldId];
+
+        
+                    formData.push({
+                        name: fieldName,
+                        type: fieldType,
+                        options: options
+                    });
+                });
+            }
+            
+            
+            formData.unshift({formName: formName});
             
             $.ajax({
-                type: "POST",
-                url: "{{url('form')}}",
+                type: method,
+                url: url,
                 data: {formData: formData,
                     _token: '{{csrf_token()}}'},
                 dataType: "json",
@@ -428,8 +538,12 @@
                             text: response.message,
                         });
                     }
+                    setTimeout(function() {
+                        location.reload();
+                    }, 3000)
+                    
                 },
-                error: function (xhr, status, error) {
+                error: function (error) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
@@ -439,6 +553,9 @@
             });
             
         });
+
+        // Fin ingreso de nuevos formularios
+
 
     });
 </script>

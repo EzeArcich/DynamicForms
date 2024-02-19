@@ -316,6 +316,11 @@ return [
             'url'  => 'form',
             'icon' => 'fas fa-fw fa-table',
         ],
+        [
+            'text' => 'Delete Forms',
+            'url'  => 'formDeletes',
+            'icon' => 'fas fa-fw fa-folder',
+        ],
         // ['header' => 'account_settings'],
         // [
         //     'text' => 'profile',

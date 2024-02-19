@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->timestamps();
+            $table->SoftDeletes();
         });
 
         Schema::create('fields', function (Blueprint $table) {
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->json('options')->nullable();
             $table->foreign('form_id')->references('id')->on('forms');
             $table->timestamps();
+            $table->SoftDeletes();
         });
     }
 
