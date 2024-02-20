@@ -1,6 +1,20 @@
 @extends('adminlte::page')
 
 @section('title', 'Dashboard')
+<style>
+    .tagify.form-control {
+        display: inline-block !important;
+        height: auto !important;
+    }
+
+    .alert-danger {
+        color: #fff!important;
+        background-color: #ef7f8a!important;
+        padding: 0.35rem 1.25rem!important;
+        line-height: 0.5rem!important;
+        margin-top: 0.6rem!important;
+    }
+</style>
 
 @section('content_header')
 
@@ -16,7 +30,7 @@
                 <div class="card-body">
                     <div class="row">
                         @foreach ($fields as $field)
-                            <div class="col-md-4 col-12">
+                            <div class="col-md-4 col-12 mb-3">
                                 @if($field['type'] == 'option')
                                     <div class="form-group">
                                         <div class="input-group mb-3">
@@ -24,10 +38,14 @@
                                                 <span class="input-group-text" for="selectType">{{ $field['name'] }}</span>
                                             </div>
                                             <select class="custom-select dynamic-select" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" id="select_type_{{ $field['id'] }}">
+                                                <option selected>Choose...</option>
                                             @foreach ($field['options'] as $option)
-                                                <option value="{{ $option }}" @if(!empty($field['values']) && $field['values'][0]['value'] === $option) selected @endif>{{ $option }}</option>
+                                                <option value="{{ $option }}">{{ $option }}</option>
                                             @endforeach
                                             </select>
+                                            <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                                Please, choose one option!
+                                            </div>
                                         </div>
                                     </div>
                                 @elseif($field['type'] == 'date')
@@ -36,7 +54,10 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">{{ $field['name'] }}</span>
                                         </div>
-                                        <input type="date" class="form-control" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" value="{{ $field['values'][0]['value'] ?? '' }}">
+                                        <input type="date" class="form-control dynamic-field" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" value="">
+                                        <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                            Field {{ $field['name'] }} cannot be empty!
+                                        </div> 
                                     </div>
                                 </div>
                                 @elseif($field['type'] == 'number')
@@ -45,7 +66,10 @@
                                         <div class="input-group-prepend">
                                             <span class="input-group-text">{{ $field['name'] }}</span>
                                         </div>
-                                        <input type="text" pattern="[0-9]*" placeholder="Only numbers allowed" class="form-control" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" value="{{ $field['values'][0]['value'] ?? '' }}">
+                                        <input type="text" pattern="[0-9]*" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Only numbers allowed" class="form-control dynamic-field" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" value="">
+                                        <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                            Field {{ $field['name'] }} cannot be empty!
+                                        </div> 
                                     </div>
                                 </div>                              
                                 @else
@@ -54,7 +78,10 @@
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text">{{ $field['name'] }}</span>
                                             </div>
-                                            <input type="text" class="form-control" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" value="{{ $field['values'][0]['value'] ?? '' }}">
+                                            <input type="text" class="form-control dynamic-field" data-field-type="{{ $field['type'] }}" data-field-id="{{ $field['id'] }}" value="">
+                                            <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                                Field {{ $field['name'] }} cannot be empty!
+                                            </div> 
                                         </div>
                                     </div>
                                 @endif
@@ -78,30 +105,71 @@
 @stop
 
 @section('js')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 <script>
     $(document).ready(function () {
-        $('#guardarCambios').click(function () {
+
+        var userRoles = @json($userRoles);
+        if (userRoles.includes('reader')) {
+            var enlaceToDeleteForms = $('.admin-role');
+            enlaceToDeleteForms.hide();
+        }
+
+        var formId = {{$data->id}};
+        
+        $('#guardarCambios').click(function (e) {
+            e.preventDefault();
+            var isValid = true;
 
             var valuesToUpdate = {};
 
             $('.dynamic-select').each(function () {
+                var currentField = $(this);
+
+                if (currentField.val() === 'Choose...') {
+                    isValid = false;
+                    var feedback = currentField.next('.invalid-feedback');
+                    feedback.show();
+                    setTimeout(function () {
+                        feedback.fadeOut(3000);
+                    }, 1000);
+                    return false;
+                } else {
+                    currentField.next('.invalid-feedback').hide();
+                }
                 var fieldId = $(this).data('field-id');
                 var fieldType = $(this).data('field-type');
                 var selectedValue = $(this).val();
                 valuesToUpdate[fieldId] = {value: selectedValue, type: fieldType};
             });
 
-            $('.form-control').each(function () {
+            $('.dynamic-field').each(function () {
+                var currentField = $(this);
+
+                if (currentField.val() === '') {
+                    isValid = false;
+                    var feedback = currentField.next('.invalid-feedback');
+                    console.log(feedback);
+                    feedback.show();
+                    setTimeout(function () {
+                        feedback.fadeOut(3000);
+                    }, 1000);
+                    return false;
+                } else {
+                    currentField.next('.invalid-feedback').hide();
+                }
                 var fieldId = $(this).data('field-id');
                 var fieldType = $(this).data('field-type');
                 var textValue = $(this).val();
                 valuesToUpdate[fieldId] = {value: textValue, type: fieldType};
             });
 
+            if(!isValid) { //Corta la ejecución del código para que no llegue al submit, si hay un campo vacío
+                return;
+            }
+
             $.ajax({
-                type: 'PUT',
-                url: '/updateValues',
+                type: 'POST',
+                url: '/storeValues',
                 data: {values: valuesToUpdate,
                     _token: '{{csrf_token()}}'},
                 success: function (response) {

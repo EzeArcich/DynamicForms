@@ -1,15 +1,19 @@
 @extends('adminlte::page')
 
 @section('title', 'Dashboard')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css">
 <style>
     .tagify.form-control {
         display: inline-block !important;
         height: auto !important;
     }
 
+    .alert-danger {
+        color: #fff!important;
+        background-color: #ef7f8a!important;
+        padding: 0.35rem 1.25rem!important;
+        line-height: 0.5rem!important;
+        margin-top: 0.6rem!important;
+    }
 </style>
 
 @section('content_header')
@@ -24,7 +28,7 @@
         <div class="col-12">
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#add_form_modal">Add Modal</button>
         </div>
-        @endrole
+    @endrole
     </div>
     <div class="row">
         <div class="col col-12">
@@ -66,6 +70,9 @@
                                                 <span class="input-group-text">Form Name</span>
                                             </div>
                                             <input type="text" id="formName" class="form-control">
+                                            <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                                Form Name cannot be empty!
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -79,8 +86,7 @@
                             <h5 class="card-header">Field</h5>
                             <div class="card-body">
                                 <div class="row mb-4" id="dynamics_fields">
-
-
+                                <!-- Espacio para líneas generadas de forma dinámica -->
                                 </div>
                                 <div class="row">
                                     <div class="col-12">
@@ -96,29 +102,6 @@
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary save_form" data-button-form="save">Save Form</button>
             </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="optionsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Options</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="options">Insert field options</label> - Type and press Enter
-                        <input id="options" name="options" class="form-control">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" id="saveOptions">Save</button>
-                </div>
             </div>
         </div>
     </div>
@@ -191,15 +174,16 @@
 @stop
 
 @section('js')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify@4.3.0/dist/jQuery.tagify.min.js"></script>
 <script>
     var fieldOptions = [];
     var userRoles = @json($userRoles);
 
     $(document).ready(function () {
+
+        if (userRoles.includes('reader')) {
+            var enlaceToDeleteForms = $('.admin-role');
+            enlaceToDeleteForms.hide();
+        }
 
         $('#options').tagify();
 
@@ -256,6 +240,8 @@
                             title: 'Success!',
                             text: response.message,
                         });
+                        $('#forms_table').dataTable().fnDestroy();
+                        getTableData();
                     } else{
                         Swal.fire({
                             icon: 'error',
@@ -263,9 +249,6 @@
                             text: response.message,
                         });
                     }
-                    setTimeout(function() {
-                        location.reload();
-                    }, 3000)
                 }
             });
         }
@@ -306,11 +289,19 @@
 
                         $('#editFormModal').modal('show');
                     } else {
-                        alert("Error al obtener los datos del formulario.");
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: "Error al obtener los datos del formulario.",
+                        });
                     }
                 },
                 error: function () {
-                    alert("Error al obtener los datos del formulario.");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: "Error al obtener los datos del formulario.",
+                    });
                 }
             });
         });
@@ -381,13 +372,16 @@
                 var fieldOptionsEdit = field.options ? JSON.parse(field.options) : [];
 
                 var newRowEditInput = `
-                    <div class="col-md-5 col-12">
+                    <div class="col-md-5 col-12 mb-3">
                         <div class="form-group">
                             <div class="input-group">
                                 <div class="input-group-prepend">
                                     <span class="input-group-text">Field Name</span>
                                 </div>
-                                <input type="text" class="form-control" id="field_name_edit_${fieldIdEdit}" value="${fieldNameEdit}">
+                                <input type="text" class="form-control dynamic-field" id="field_name_edit_${fieldIdEdit}" value="${fieldNameEdit}">
+                                <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                    Field Name cannot be empty!
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -403,6 +397,9 @@
                                     <option value="text" ${fieldTypeEdit === 'text' ? 'selected' : ''}>Text</option>
                                     <option value="option" ${fieldTypeEdit === 'option' ? 'selected' : ''}>Options</option>
                                 </select>
+                                <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                    You have to choose a option!
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -416,8 +413,8 @@
                     newRowEditInput += `
                     <div class="col-12">
                         <div class="form-group">
-                            <label for="optionsEdit">Insert field options</label> - Type and press Enter
-                            <input id="optionsEdit_${fieldIdEdit}" name="optionsEdit" class="form-control"
+                            <label for="optionsEdit_${fieldIdEdit}">Insert field options</label> - Type and press Enter
+                            <input id="optionsEdit_${fieldIdEdit}" name="optionsEdit_${fieldIdEdit}" class="form-control"
                             style="display: inline-block !important; height: auto !important;" value="${fieldOptionsEdit.join(',')}">
                         </div>
                     </div>`;
@@ -462,13 +459,16 @@
         function addDynamicField(nameIdField, nameidSelect) {
             var fieldId = new Date().getTime();
             var newRow = 
-                `<div class="col-md-5 col-sm-12 col-12">
+                `<div class="col-md-5 col-sm-12 col-12 mb-3">
                     <div class="form-group">
                         <div class="input-group">
                             <div class="input-group-prepend">
                                 <span class="input-group-text" >Field Name</span>
                             </div>
-                            <input type="text" class="form-control" id="${nameIdField}${fieldId}">
+                            <input type="text" class="form-control dynamic-field" id="${nameIdField}${fieldId}">
+                            <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                Field Name cannot be empty!
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -485,6 +485,9 @@
                                 <option value="text">Text</option>
                                 <option value="option">Options</option>
                             </select>
+                            <div class="alert alert-danger invalid-feedback" style="display:none; position: absolute; top:2rem" role="alert">
+                                You have to choose a option!
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -496,6 +499,7 @@
                 $('.btn-remove-row').click(function () { 
                     $(this).closest('.row').remove();                 
                 });
+
         };
 
         // Fin de lógica para agregar rows dinámicas
@@ -513,32 +517,69 @@
         $(document).on('change', '.dynamic-select', function () { 
             var selectedValue = $(this).val();
             var fieldId = $(this).data('field-id');
+            
 
             if(selectedValue == "option") {
-                $('#optionsModal').attr('data-currentFieldId', fieldId).modal('show');
+                
+                // $('#optionsModal').attr('data-currentFieldId', fieldId).modal('show');
+                
+                var newRowEditInput = `
+                <div class="col-12">
+                    <div class="form-group">
+                        <label for="optionsEdit_${fieldId}">Insert field options</label> - Type and press Enter
+                        <input id="optionsEdit_${fieldId}" name="optionsEdit_${fieldId}" class="form-control"
+                        style="display: inline-block !important; height: auto !important;">
+                    </div>
+                </div>`;
+                
+                var newRow = $('<div class="row">' + newRowEditInput + '</div>');
+                dynamicFieldsContainer.append(newRow);
+
+                var optionsEditInput = newRow.find(`#optionsEdit_${fieldId}`);
+                optionsEditInput.tagify();
+                
             }
         });
-
-        $('#saveOptions').click(function () { 
-            var currentFieldId = $('#optionsModal').attr('data-currentFieldId');
-            var options = $('#options').val();
-
-            fieldOptions[currentFieldId] = options;
-
-            var tagifyInstance = $('#options').data('tagify');
-
-            if (tagifyInstance) {
-                tagifyInstance.removeAllTags();
-            }
-
-            $('#options').val('');
-            $('#optionsModal').modal('hide');
-        });
-
-        // Ingreso de nuevos formularios
         
         $('.save_form').click(function (e) { 
             e.preventDefault();
+            var isValid = true;
+
+            $('.dynamic-field').each(function () {
+                var currentField = $(this);
+
+                if (currentField.val() === '') {
+                    isValid = false;
+                    var feedback = currentField.next('.invalid-feedback');
+                    feedback.show();
+                    setTimeout(function () {
+                        feedback.fadeOut(3000);
+                    }, 1000);
+                    return false;
+                } else {
+                    currentField.next('.invalid-feedback').hide();
+                }
+            });
+
+            $('.dynamic-select').each(function () {
+                var currentField = $(this);
+
+                if (currentField.val() === 'Choose...') {
+                    isValid = false;
+                    var feedback = currentField.next('.invalid-feedback');
+                    feedback.show();
+                    setTimeout(function () {
+                        feedback.fadeOut(3000);
+                    }, 1000);
+                    return false;
+                } else {
+                    currentField.next('.invalid-feedback').hide();
+                }
+            });
+
+            if(!isValid) { //Corta la ejecución del código para que no llegue al submit, si hay un campo vacío
+                return;
+            }
 
             var actionValue = $(this).data('button-form');
             var id = $('#formId').val();
@@ -555,33 +596,21 @@
 
 
                 dynamicFieldsContainer.find('.row').each(function () {
-                    var fieldId = $(this).find('[id^="field_name_edit_"]').attr('id').split('_').pop();
+                    var fieldIdElement = $(this).find('[id^="field_name_"]');
+                    if (fieldIdElement.length === 0) {
+                        return true;
+                    }
+                    var fieldId = fieldIdElement.attr('id').split('_').pop();
                     var fieldName = $('#field_name_edit_' + fieldId).val();
                     var fieldType = $('#select_type_edit_' + fieldId).val();
-                    var options = $('#optionsEdit_' + fieldId).val();
-                    var options2 = fieldOptions[fieldId];
-
-                    var parsedOptions = options ? JSON.parse(options) : [];
-                    var parsedOptions2 = options2 ? JSON.parse(options2) : [];
-
-                    // Combina los arrays
-                    var combinedOptions = parsedOptions.concat(parsedOptions2);
-
-                    // Filtra duplicados
-                    combinedOptions = combinedOptions.filter(function(option, index, self) {
-                        return index === self.findIndex(o => o.value === option.value);
-                    });
-
-                    // Convierte el array combinedOptions a una cadena JSON
-                    var optionsString = JSON.stringify(combinedOptions);
-                    
+                    var options = $('#optionsEdit_' + fieldId).val();                   
 
         
                     formData.push({
                         id: fieldId,
                         name: fieldName,
                         type: fieldType,
-                        options: optionsString,
+                        options: options
                     });
                 });
 
@@ -592,12 +621,19 @@
                 dynamicFieldsContainer = $('#dynamics_fields');
 
                 dynamicFieldsContainer.find('.row').each(function () {
-                    var fieldId = $(this).find('[id^="field_name_"]').attr('id').split('_').pop();
+                    var fieldIdElement = $(this).find('[id^="field_name_"]');
+                    
+                    // Verificar si existe el campo field_name_ en la fila actual
+                    if (fieldIdElement.length === 0) {
+                        // Saltar esta iteración si no se encuentra el campo
+                        return true;
+                    }
+
+                    var fieldId = fieldIdElement.attr('id').split('_').pop();
                     var fieldName = $('#field_name_' + fieldId).val();
                     var fieldType = $('#select_type_' + fieldId).val();
-                    var options = fieldOptions[fieldId];
+                    var options = $('#optionsEdit_' + fieldId).val();
 
-        
                     formData.push({
                         name: fieldName,
                         type: fieldType,
@@ -623,17 +659,16 @@
                             text: response.message,
                         });
                         $('#add_form_modal').modal('hide');
+                        $('#editFormModal').modal('hide');
+                        $('#forms_table').dataTable().fnDestroy();
+                        getTableData();
                     } else {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
                             text: response.message,
                         });
-                    }
-                    setTimeout(function() {
-                        location.reload();
-                    }, 3000)
-                    
+                    }                  
                 },
                 error: function (error) {
                     Swal.fire({

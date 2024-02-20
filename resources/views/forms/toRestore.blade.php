@@ -1,8 +1,6 @@
 @extends('adminlte::page')
 
 @section('title', 'Dashboard')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.css">
 
 @section('content_header')
 
@@ -38,35 +36,37 @@
 @stop
 
 @section('js')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
 <script>
     $(document).ready(function () {
-        $('#forms_deleted_table').DataTable({
-            ajax: 'getFormDeletes',
-            columns: [
-                {data: 'id'},
-                {data: 'name'},
-                {data: 'fields_count'},
-                {data: 'fields_names'},
-                {data: 'created_at_formatted'},
-                {data: 'updated_at_formatted'},
-                {
-                data: 'id',
-                    render: function(data, type, full, meta) {
+        
+        function getTableDataDeletes() { 
+            $('#forms_deleted_table').DataTable({
+                ajax: 'getFormDeletes',
+                columns: [
+                    {data: 'id'},
+                    {data: 'name'},
+                    {data: 'fields_count'},
+                    {data: 'fields_names'},
+                    {data: 'created_at_formatted'},
+                    {data: 'updated_at_formatted'},
+                    {
+                    data: 'id',
+                        render: function(data, type, full, meta) {
 
-                          var  buttonsHtml = '<a class="btn btn-sm btn-success mx-1" data-id="' + data + '" id="restore_button"><i class="fas fa-fw fa-folder-open"></i></a>';
-                        
+                            var  buttonsHtml = '<a class="btn btn-sm btn-success mx-1" data-id="' + data + '" id="restore_button"><i class="fas fa-fw fa-folder-open"></i></a>';
+                            
 
-                        return buttonsHtml;
-                },
-                orderable: false,
-                searchable: false
-            }
-            ],
-            responsive: true,
-        });
+                            return buttonsHtml;
+                    },
+                    orderable: false,
+                    searchable: false
+                }
+                ],
+                responsive: true,
+            });
+        }
+
+        getTableDataDeletes();
 
         function restoreDeletedForm(id) {
             $.ajax({
@@ -81,6 +81,8 @@
                             title: 'Success!',
                             text: response.message,
                         });
+                        $('#forms_deleted_table').dataTable().fnDestroy();
+                        getTableDataDeletes();
                     } else{
                         Swal.fire({
                             icon: 'error',
@@ -88,9 +90,6 @@
                             text: response.message,
                         });
                     }
-                    setTimeout(function() {
-                        location.reload();
-                    }, 3000)
                 },
                 error: function (error) {
                     Swal.fire({

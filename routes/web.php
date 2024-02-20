@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\FieldController;
+use App\Http\Controllers\FieldValueController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -27,10 +28,12 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::resource('form', FormController::class);
 Route::resource('field', FieldController::class);
 Route::get('getFormsData', [FormController::class, 'getFormsData']);
-Route::put('updateValues/{id?}', [FormController::class, 'updateValues']);
+Route::post('storeValues', [FieldValueController::class, 'storeValues']);
 Route::get('getFormDeletes', [FormController::class, 'getFormDeletes']);
 Route::get('formDeletes', [FormController::class, 'formDeletes']);
 Route::put('restoreFormDeletes/{id?}', [FormController::class, 'restoreFormDeletes']);
+Route::get('formsList', [FormController::class, 'formsList']);
+Route::get('getTableInfo', [FormController::class, 'getTableInfo']);
 
 
 
