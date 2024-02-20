@@ -40,6 +40,7 @@
     $(document).ready(function () {
         
         function getTableDataDeletes() { 
+
             $('#forms_deleted_table').DataTable({
                 ajax: 'getFormDeletes',
                 columns: [
@@ -53,7 +54,7 @@
                     data: 'id',
                         render: function(data, type, full, meta) {
 
-                            var  buttonsHtml = '<a class="btn btn-sm btn-success mx-1" data-id="' + data + '" id="restore_button"><i class="fas fa-fw fa-folder-open"></i></a>';
+                            var  buttonsHtml = '<a class="btn btn-sm btn-warning mx-1" data-id="' + data + '" id="restore_button"><i class="fas fa-fw fa-folder-open"></i></a>';
                             
 
                             return buttonsHtml;
@@ -64,9 +65,12 @@
                 ],
                 responsive: true,
             });
+            
         }
 
+
         getTableDataDeletes();
+
 
         function restoreDeletedForm(id) {
             $.ajax({
@@ -101,6 +105,7 @@
             });
         }
 
+
         const swalWithBootstrapButtons = Swal.mixin({
             customClass: {
                 confirmButton: "btn btn-success mx-1",
@@ -126,15 +131,11 @@
                 if (result.isConfirmed) {
                     restoreDeletedForm(id);
                 } else if (
-                    /* Read more about handling dismissals below */
                     result.dismiss === Swal.DismissReason.cancel
                 ) {
 
                 }
-            });
-            
-
-            
+            });           
         });     
     });
 </script>

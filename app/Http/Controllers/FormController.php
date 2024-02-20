@@ -168,7 +168,7 @@ class FormController extends Controller
 
     public function getTableInfo()
     {
-        $formId = 2;
+        $formId = 3;
 
         $forms = Form::with(['fields', 'fields.values'])
             ->where('id', $formId)

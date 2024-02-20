@@ -25,6 +25,7 @@
     
     <div class="row my-5" style="padding-top:50px!important;">
     @role('admin')
+        <h2>Forms creation</h2>
         <div class="col-12">
             <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#add_form_modal">Add Modal</button>
         </div>

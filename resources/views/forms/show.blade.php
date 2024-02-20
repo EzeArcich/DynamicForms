@@ -113,8 +113,6 @@
             var enlaceToDeleteForms = $('.admin-role');
             enlaceToDeleteForms.hide();
         }
-
-        var formId = {{$data->id}};
         
         $('#guardarCambios').click(function (e) {
             e.preventDefault();
@@ -179,7 +177,6 @@
                             title: 'Success!',
                             text: response.message,
                         });
-                        $('#add_form_modal').modal('hide');
                     } else {
                         Swal.fire({
                             icon: 'error',
